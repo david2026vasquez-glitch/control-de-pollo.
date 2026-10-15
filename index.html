@@ -10,7 +10,7 @@
 <body>
 <header><div class="wrap"><h1>Control de Pollo</h1><p>Ventas, inventario y cierre diario</p></div></header>
 <main>
-<div class="notice no-print"><strong>Importante:</strong> Los datos se guardan en este navegador y dispositivo. Marca la casilla de merma si el proveedor dejó el pollo con líquido.</div>
+<div class="notice no-print"><strong>Importante:</strong> Los datos se guardan en este navegador y dispositivo. Marca la casilla de merma en el lote que corresponda si trae líquido.</div>
 <section class="card" id="openingCard">
 <h2>1. Apertura del día <span id="status" class="pill">Jornada sin iniciar</span></h2>
 <p class="sub">Registra por separado el pollo que quedó y el que trae el camión.</p>
@@ -19,13 +19,21 @@
 <div><label for="priceLb">Precio por libra ($)</label><input id="priceLb" type="number" min="0" step="0.01" placeholder="Ej. 1.05"></div>
 </div>
 <div class="row">
-<div><label for="oldStock">Libras que dejó la persona anterior</label><input id="oldStock" type="number" min="0" step="0.01" placeholder="Ej. 35.50"></div>
-<div><label for="newStock">Libras que trae el camión</label><input id="newStock" type="number" min="0" step="0.01" placeholder="Ej. 120.00"></div>
+<div>
+<label for="oldStock">Libras que dejó la persona anterior</label>
+<input id="oldStock" type="number" min="0" step="0.01" placeholder="Ej. 35.50">
+<div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+<input type="checkbox" id="applyOldShrink" style="width: 18px; height: 18px; min-height: auto; cursor: pointer;">
+<label for="applyOldShrink" style="margin: 0; font-size: 0.85rem; font-weight: normal; cursor: pointer;">Aplicar 3% de merma a este lote</label>
 </div>
-<div class="row" style="align-items: center; margin-top: 10px;">
-<div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; background: #f6f9f6; padding: 10px; border-radius: 10px; border: 1px solid var(--line);">
-<input type="checkbox" id="applyShrink" style="width: 22px; height: 22px; min-height: auto; cursor: pointer;">
-<label for="applyShrink" style="margin: 0; cursor: pointer; font-size: 0.95rem;">Aplicar 3% de descuento por merma de líquido (opcional)</label>
+</div>
+<div>
+<label for="newStock">Libras que trae el camión</label>
+<input id="newStock" type="number" min="0" step="0.01" placeholder="Ej. 120.00">
+<div style="margin-top: 6px; display: flex; align-items: center; gap: 6px;">
+<input type="checkbox" id="applyFreshShrink" style="width: 18px; height: 18px; min-height: auto; cursor: pointer;">
+<label for="applyFreshShrink" style="margin: 0; font-size: 0.85rem; font-weight: normal; cursor: pointer;">Aplicar 3% de merma a este lote</label>
+</div>
 </div>
 </div>
 <div class="row" style="margin-top: 10px;">
