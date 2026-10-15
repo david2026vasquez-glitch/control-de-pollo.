@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#174d36">
+<title>Control de Pollo</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+<header><div class="wrap"><h1>Control de Pollo</h1><p>Ventas, inventario y cierre diario</p></div></header>
+<main>
+<div class="notice no-print"><strong>Importante:</strong> los datos se guardan en este navegador, en este dispositivo. No borres los datos del sitio ni uses modo incógnito durante la jornada. El descuento del 3 % no se aplica automáticamente hasta confirmar la regla del agromercado.</div>
+<section class="card" id="openingCard">
+<h2>1. Apertura del día <span id="status" class="pill">Jornada sin iniciar</span></h2>
+<p class="sub">Registra por separado el pollo que quedó y el que trae el camión.</p>
+<div class="row">
+<div><label for="dayDate">Fecha</label><input type="date" id="dayDate"></div>
+<div><label for="priceLb">Precio por libra ($), si lo necesitas</label><input id="priceLb" type="number" min="0" step="0.01" placeholder="Ej. 1.05"></div>
+</div>
+<div class="row">
+<div><label for="oldStock">Libras que dejó la persona anterior</label><input id="oldStock" type="number" min="0" step="0.01" placeholder="Ej. 35.50"></div>
+<div><label for="newStock">Libras que trae el camión</label><input id="newStock" type="number" min="0" step="0.01" placeholder="Ej. 120.00"></div>
+</div>
+<div class="row">
+<div><label for="openingCash">Dinero inicial para dar vuelto ($)</label><input id="openingCash" type="number" min="0" step="0.01" placeholder="Ej. 10.00" value="0"></div>
+<div><label for="notesOpen">Nota de apertura (opcional)</label><input id="notesOpen" type="text" placeholder="Observaciones"></div>
+</div>
+<div class="actions no-print"><button class="btn primary" id="startBtn">Iniciar jornada</button></div>
+<p class="small">Si ya iniciaste una jornada, no vuelvas a pulsar este botón para no reemplazar los datos.</p>
+</section>
+
+<section class="card hidden" id="saleCard">
+<h2>2. Registrar una venta</h2>
+<p class="sub">Introduce el peso y el importe exacto que muestra la báscula. La aplicación propone cobrar redondeando hacia arriba al siguiente múltiplo de $0.05.</p>
+<div class="row">
+<div><label for="saleWeight">Peso vendido (libras)</label><input id="saleWeight" type="number" min="0.01" step="0.01" placeholder="Ej. 2.40"></div>
+<div><label for="scaleAmount">Importe de la báscula ($)</label><input id="scaleAmount" type="number" min="0" step="0.01" placeholder="Ej. 2.52"></div>
+</div>
+<div class="row">
+<div><label for="chargedAmount">Importe a cobrar ($)</label><input id="chargedAmount" type="number" min="0" step="0.01" placeholder="Se calcula al introducir el importe"></div>
+<div><label for="cashGiven">Dinero entregado por el cliente ($)</label><input id="cashGiven" type="number" min="0" step="0.01" placeholder="Ej. 5.00"></div>
+</div>
+<div class="result" id="changePreview">Vuelto: <strong>$0.00</strong></div>
+<label for="saleNote">Nota (opcional)</label><input id="saleNote" type="text" placeholder="Ej. pagó con billete de $10">
+<div class="actions no-print"><button class="btn secondary" id="roundBtn">Redondear a $0.05</button><button class="btn primary" id="addSaleBtn">Guardar venta</button></div>
+<p class="small">El vuelto se calcula a partir del importe que decidas cobrar, no del importe exacto de la báscula. Revisa los datos antes de guardar.</p>
+</section>
+
+<section class="card hidden" id="summaryCard">
+<h2>Resumen de la jornada</h2>
+<div class="stats">
+<div class="stat"><span>Ventas cobradas</span><strong id="totalSales">$0.00</strong></div>
+<div class="stat"><span>Libras vendidas</span><strong id="totalWeight">0.00 lb</strong></div>
+<div class="stat"><span>Pollo anterior restante</span><strong id="oldRemaining">0.00 lb</strong></div>
+<div class="stat"><span>Pollo nuevo restante</span><strong id="newRemaining">0.00 lb</strong></div>
+</div>
+<div class="stats" style="margin-top:10px">
+<div class="stat"><span>Dinero inicial</span><strong id="startCash">$0.00</strong></div>
+<div class="stat"><span>Vuelto entregado</span><strong id="totalChange">$0.00</strong></div>
+<div class="stat"><span>Efectivo esperado en caja</span><strong id="expectedCash">$0.00</strong></div>
+<div class="stat"><span>Ventas registradas</span><strong id="saleCount">0</strong></div>
+</div>
+</section>
+
+<section class="card hidden" id="historyCard">
+<h2>Historial de ventas de hoy</h2>
+<div class="table-wrap"><table><thead><tr><th># / Hora</th><th class="num">Libras</th><th class="num">Báscula</th><th class="num">Cobrado</th><th class="num">Entregó</th><th class="num">Vuelto</th><th class="no-print">Acción</th></tr></thead><tbody id="salesRows"></tbody></table></div>
+<div id="emptySales" class="empty">Todavía no has registrado ventas.</div>
+</section>
+
+<section class="card hidden" id="closingCard">
+<h2>3. Cierre del día</h2>
+<p class="sub">Cuenta el efectivo físico y compáralo con el esperado. El dinero inicial para dar vuelto está incluido en el cálculo.</p>
+<div class="row">
+<div><label for="countedCash">Efectivo contado al cerrar ($)</label><input id="countedCash" type="number" min="0" step="0.01" placeholder="Cuenta todo el efectivo de caja"></div>
+<div><label for="closingNote">Observaciones de cierre</label><input id="closingNote" type="text" placeholder="Ej. diferencia, incidencia, etc."></div>
+</div>
+<div class="result" id="cashDifference">Diferencia de caja: pendiente de contar.</div>
+<div class="actions no-print"><button class="btn secondary" id="checkCashBtn">Calcular diferencia</button><button class="btn primary" id="printBtn">Imprimir / guardar reporte PDF</button><button class="btn danger" id="closeBtn">Cerrar jornada</button></div>
+<p class="small">Imprime o guarda el reporte antes de cerrar. Después podrás iniciar una jornada nueva. La jornada cerrada queda como reporte en esta pantalla hasta iniciar otra.</p>
+</section>
+
+<section class="card hidden" id="closedCard">
+<h2>Jornada cerrada</h2><p>Esta jornada está cerrada. Imprime el reporte si todavía no lo has hecho. Para empezar otro día, confirma que ya guardaste el reporte en papel o PDF.</p>
+<div class="actions no-print"><button class="btn secondary" id="printClosedBtn">Imprimir reporte</button><button class="btn primary" id="newDayBtn">Preparar nuevo día</button></div>
+</section>
+</main>
+<footer>Control de Pollo · Herramienta de apoyo; verifica las reglas de cobro e inventario del establecimiento.</footer>
+    <script src="script.js"></script>
+
+</body>
+</html>
