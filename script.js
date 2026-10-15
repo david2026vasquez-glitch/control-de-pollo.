@@ -124,7 +124,6 @@ function roundUp05(valueC) {
     return Math.ceil(valueC / 5) * 5;
 }
 
-// Función para truncar exactamente a 2 decimales igual que la calculadora de celular
 function truncate2(val) {
     return Math.floor(val * 100) / 100;
 }
@@ -145,7 +144,6 @@ $('startBtn').onclick = () => {
         return;
     }
 
-    // Aplicar el 3% restando y truncando exactamente a 2 decimales (ej: 225.73 * 0.97 = 218.9581 -> 218.95)
     if (applyOldShrink) {
         oldVal = truncate2(oldVal * 0.97);
     }
