@@ -124,28 +124,50 @@ function roundUp05(valueC) {
     return Math.ceil(valueC / 5) * 5;
 }
 
+// Función para truncar exactamente a 2 decimales igual que la calculadora de celular
+function truncate2(val) {
+    return Math.floor(val * 100) / 100;
+}
+
 $('startBtn').onclick = () => {
     if (state && !state.closed) {
         alert('Ya hay una jornada en curso.');
         return;
     }
-    let old = num('oldStock'), fresh = num('newStock');
-    const cash = num('openingCash'), applyShrink = $('applyShrink').checked;
-    if (old < 0 || fresh < 0 || cash < 0) {
+    let oldVal = num('oldStock');
+    let freshVal = num('newStock');
+    const cash = num('openingCash');
+    const applyOldShrink = $('applyOldShrink').checked;
+    const applyFreshShrink = $('applyFreshShrink').checked;
+
+    if (oldVal < 0 || freshVal < 0 || cash < 0) {
         alert('Las cantidades no pueden ser negativas.');
         return;
     }
-    if (applyShrink) {
-        old = old * 0.97;
-        fresh = fresh * 0.97;
+
+    // Aplicar el 3% restando y truncando exactamente a 2 decimales (ej: 225.73 * 0.97 = 218.9581 -> 218.95)
+    if (applyOldShrink) {
+        oldVal = truncate2(oldVal * 0.97);
     }
+    if (applyFreshShrink) {
+        freshVal = truncate2(freshVal * 0.97);
+    }
+
+    let notes = $('notesOpen').value.trim();
+    let shrinkNotes = [];
+    if (applyOldShrink) shrinkNotes.push('3% en anterior');
+    if (applyFreshShrink) shrinkNotes.push('3% en camión');
+    if (shrinkNotes.length > 0) {
+        notes += (notes ? ' - ' : '') + '(' + shrinkNotes.join(', ') + ')';
+    }
+
     state = {
         date: $('dayDate').value || today(),
         price: num('priceLb'),
-        oldStock: Number(old.toFixed(2)),
-        newStock: Number(fresh.toFixed(2)),
+        oldStock: Number(oldVal.toFixed(2)),
+        newStock: Number(freshVal.toFixed(2)),
         openingCash: cash,
-        openingNote: $('notesOpen').value.trim() + (applyShrink ? ' (Con 3% de merma aplicado)' : ''),
+        openingNote: notes,
         sales: [],
         closed: false,
         countedC: null,
@@ -277,7 +299,8 @@ $('newDayBtn').onclick = () => {
     state = null;
     try { localStorage.removeItem(KEY); } catch (e) {}
     ['oldStock', 'newStock', 'notesOpen', 'priceLb'].forEach(id => $(id).value = '');
-    $('openingCash').value = '0';$('applyShrink').checked = false;
+    $('openingCash').value = '0';$('applyOldShrink').checked = false;
+    $('applyFreshShrink').checked = false;
     $('dayDate').value = today();
     render();
 };
