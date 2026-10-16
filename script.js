@@ -114,10 +114,12 @@
   });
 
   function render() {
-    const has = !!state;
-    if ($('openingCard')) $('openingCard').classList.toggle('hidden', has);
-    if ($('appNav')) $('appNav').classList.toggle('hidden', !has);
-    if (!has) return;
+    const hasActive = state && !state.closed;
+
+    if ($('openingCard')) $('openingCard').classList.toggle('hidden', hasActive);
+    if ($('appNav')) $('appNav').classList.toggle('hidden', !hasActive);
+
+    if (!hasActive) return;
 
     if (document.querySelectorAll('.tab-content:not(.hidden)').length === 0) {
       if ($('tabResumen')) $('tabResumen').classList.remove('hidden');
@@ -451,12 +453,11 @@
     render();
   };
 
-  // ========== CIERRE (CORREGIDO: muestra dinero real de pechuga y muslo) ==========
+  // ========== CIERRE ==========
   function calculateClosingData() {
     if (!state) return;
     const sold = getSoldQuantities();
 
-    // Dinero real cobrado de pechuga y muslo
     let pechugaMoney = 0;
     let musloMoney = 0;
     (state.sales || []).forEach(s => {
@@ -466,7 +467,6 @@
       }
     });
 
-    // Pechuga
     const pInit = state.pollo.pechuga.initial;
     const pEnt  = state.pollo.pechuga.entries;
     const pSold = sold.pollo.pechuga;
@@ -475,7 +475,6 @@
     const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
     const pFinal = truncate2(pRest - pMerma);
 
-    // Muslo
     const mInit = state.pollo.muslo.initial;
     const mEnt  = state.pollo.muslo.entries;
     const mSold = sold.pollo.muslo;
@@ -509,7 +508,6 @@
       `;
     }
 
-    // Empacados (sin cambios)
     let packHTML = '';
     PACKAGED_CATALOG.forEach(p => {
       const item = state.packaged[p.id];
@@ -561,18 +559,25 @@
   if ($('closeDayBtn')) {
     $('closeDayBtn').onclick = () => {
       if (!active()) return;
-      if (!confirm('¿Cerrar la jornada?')) return;
+      if (!confirm('¿Cerrar la jornada definitivamente?')) return;
+
       state.countedC = $('countedCash')?.value === '' ? null : cents(num('countedCash'));
       state.closingNote = $('closingNote')?.value || '';
       state.closed = true;
       state.closeTime = new Date().toLocaleTimeString('es-SV', {hour:'2-digit', minute:'2-digit'});
       save();
-      alert('Jornada cerrada');
+
+      // Limpiar para poder iniciar nueva jornada
+      state = null;
+      currentCart = [];
+      localStorage.removeItem(KEY);
+
+      alert('Jornada cerrada correctamente');
       render();
     };
   }
 
-   // ========== PDF ==========
+  // ========== PDF ==========
   if ($('downloadPdfBtn')) {
     $('downloadPdfBtn').onclick = () => {
       if (!window.jspdf) return alert('No se pudo cargar la librería PDF');
@@ -580,7 +585,6 @@
       const doc = new jsPDF('p', 'mm', 'a4');
       const sold = getSoldQuantities();
 
-      // Dinero real cobrado de pechuga y muslo
       let pechugaMoney = 0;
       let musloMoney = 0;
       let totalSalesC = 0;
@@ -607,7 +611,6 @@
       doc.text(`Encargados del puesto: ${encargados}`, 14, 30);
       doc.text(`Fondo inicial: ${money(state.openingCash)}  |  Total ventas: ${money(fromCents(totalSalesC))}`, 14, 35);
 
-      // Cálculos de merma
       const applyP = $('applyShrinkPechuga')?.checked;
       const pRest = Math.max(0, state.pollo.pechuga.initial + state.pollo.pechuga.entries - sold.pollo.pechuga);
       const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
@@ -651,7 +654,6 @@
         styles: { fontSize: 8 }
       });
 
-      // Empacados
       let nextY = doc.lastAutoTable.finalY + 8;
       doc.setFont('helvetica', 'bold');
       doc.text('2. Embutidos y Empacados', 14, nextY);
@@ -681,7 +683,6 @@
         styles: { fontSize: 8 }
       });
 
-      // Arqueo
       let boxY = doc.lastAutoTable.finalY + 8;
       doc.setFont('helvetica', 'bold');
       doc.text('3. Arqueo de Caja', 14, boxY);
@@ -690,7 +691,6 @@
       const diffVal = $('countedCash')?.value ? money(fromCents(cents(Number($('countedCash').value)) - expectedC)) : 'N/A';
       doc.text(`Efectivo esperado: ${money(fromCents(expectedC))}  |  Contado: ${countedVal}  |  Diferencia: ${diffVal}`, 14, boxY + 6);
 
-      // Firmas
       let signY = boxY + 22;
       if (signY > 270) { doc.addPage(); signY = 30; }
       doc.line(14, signY, 90, signY);
