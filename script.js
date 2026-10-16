@@ -572,87 +572,137 @@
     };
   }
 
-  // PDF (igual)
-  if ($('downloadPdfBtn')) {
-    $('downloadPdfBtn').onclick = () => {
-      if (!window.jspdf) return alert('No se pudo cargar la librería PDF');
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const sold = getSoldQuantities();
-      let totalSalesC = 0;
-      (state.sales || []).forEach(s => totalSalesC += s.chargedC);
-      const expectedC = cents(state.openingCash) + totalSalesC;
-      const encargados = state.primaryResp + (state.secondResp ? ' y ' + state.secondResp : '');
+  // ========== PDF ==========
+if ($('downloadPdfBtn')) {
+  $('downloadPdfBtn').onclick = () => {
+    if (!window.jspdf) return alert('No se pudo cargar la librería PDF');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const sold = getSoldQuantities();
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(state.establishment, 105, 12, { align: 'center' });
-      doc.setFontSize(11);
-      doc.text('INFORME DIARIO DE VENTAS E INVENTARIO', 105, 18, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Fecha: ${state.date}  |  Estado: ${state.closed ? 'CERRADA' : 'EN CURSO'}`, 14, 25);
-      doc.text(`Encargados del puesto: ${encargados}`, 14, 30);
-      doc.text(`Fondo inicial: ${money(state.openingCash)}  |  Total ventas: ${money(fromCents(totalSalesC))}`, 14, 35);
+    // Dinero real cobrado de pechuga y muslo
+    let pechugaMoney = 0;
+    let musloMoney = 0;
+    let totalSalesC = 0;
 
-      const applyP = $('applyShrinkPechuga')?.checked;
-      const pRest = Math.max(0, state.pollo.pechuga.initial + state.pollo.pechuga.entries - sold.pollo.pechuga);
-      const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
-      const pFinal = truncate2(pRest - pMerma);
-      const applyM = $('applyShrinkMuslo')?.checked;
-      const mRest = Math.max(0, state.pollo.muslo.initial + state.pollo.muslo.entries - sold.pollo.muslo);
-      const mMerma = applyM ? truncate2(mRest * 0.03) : 0;
-      const mFinal = truncate2(mRest - mMerma);
+    (state.sales || []).forEach(s => {
+      totalSalesC += s.chargedC;
+      if (s.type === 'pollo') {
+        if (s.subtype === 'pechuga') pechugaMoney += fromCents(s.chargedC);
+        if (s.subtype === 'muslo')   musloMoney  += fromCents(s.chargedC);
+      }
+    });
 
-      doc.setFont('helvetica', 'bold');
-      doc.text('1. Pollo', 14, 42);
-      doc.autoTable({
-        startY: 44,
-        head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Merma', 'Final', 'Total $']],
-        body: [
-          ['Pechuga', state.pollo.pechuga.initial.toFixed(2), state.pollo.pechuga.entries.toFixed(2), sold.pollo.pechuga.toFixed(2), pRest.toFixed(2), applyP ? '-'+pMerma.toFixed(2) : '0.00', pFinal.toFixed(2), money(sold.pollo.pechuga * state.pollo.pechuga.price)],
-          ['Muslo', state.pollo.muslo.initial.toFixed(2), state.pollo.muslo.entries.toFixed(2), sold.pollo.muslo.toFixed(2), mRest.toFixed(2), applyM ? '-'+mMerma.toFixed(2) : '0.00', mFinal.toFixed(2), money(sold.pollo.muslo * state.pollo.muslo.price)]
+    const expectedC = cents(state.openingCash) + totalSalesC;
+    const encargados = state.primaryResp + (state.secondResp ? ' y ' + state.secondResp : '');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(state.establishment, 105, 12, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text('INFORME DIARIO DE VENTAS E INVENTARIO', 105, 18, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Fecha: ${state.date}  |  Estado: ${state.closed ? 'CERRADA' : 'EN CURSO'}`, 14, 25);
+    doc.text(`Encargados del puesto: ${encargados}`, 14, 30);
+    doc.text(`Fondo inicial: ${money(state.openingCash)}  |  Total ventas: ${money(fromCents(totalSalesC))}`, 14, 35);
+
+    // Cálculos de merma
+    const applyP = $('applyShrinkPechuga')?.checked;
+    const pRest = Math.max(0, state.pollo.pechuga.initial + state.pollo.pechuga.entries - sold.pollo.pechuga);
+    const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
+    const pFinal = truncate2(pRest - pMerma);
+
+    const applyM = $('applyShrinkMuslo')?.checked;
+    const mRest = Math.max(0, state.pollo.muslo.initial + state.pollo.muslo.entries - sold.pollo.muslo);
+    const mMerma = applyM ? truncate2(mRest * 0.03) : 0;
+    const mFinal = truncate2(mRest - mMerma);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('1. Pollo (Pechuga y Muslo)', 14, 42);
+
+    doc.autoTable({
+      startY: 44,
+      head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Merma', 'Final', 'Total Cobrado']],
+      body: [
+        [
+          'Pechuga',
+          state.pollo.pechuga.initial.toFixed(2),
+          state.pollo.pechuga.entries.toFixed(2),
+          sold.pollo.pechuga.toFixed(2),
+          pRest.toFixed(2),
+          applyP ? '-' + pMerma.toFixed(2) : '0.00',
+          pFinal.toFixed(2),
+          money(pechugaMoney)
         ],
-        theme: 'grid', headStyles: { fillColor: [23, 77, 54] }, styles: { fontSize: 8 }
-      });
+        [
+          'Muslo',
+          state.pollo.muslo.initial.toFixed(2),
+          state.pollo.muslo.entries.toFixed(2),
+          sold.pollo.muslo.toFixed(2),
+          mRest.toFixed(2),
+          applyM ? '-' + mMerma.toFixed(2) : '0.00',
+          mFinal.toFixed(2),
+          money(musloMoney)
+        ]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [23, 77, 54] },
+      styles: { fontSize: 8 }
+    });
 
-      let nextY = doc.lastAutoTable.finalY + 8;
-      doc.setFont('helvetica', 'bold');
-      doc.text('2. Embutidos y Empacados', 14, nextY);
-      const packData = [];
-      PACKAGED_CATALOG.forEach(p => {
-        const item = state.packaged[p.id];
-        const s = sold.pack[p.id] || 0;
-        if (item.initial > 0 || item.entries > 0 || s > 0) {
-          packData.push([p.name, item.initial, item.entries, s, Math.max(0, item.initial + item.entries - s), money(s * item.price)]);
-        }
-      });
-      doc.autoTable({
-        startY: nextY + 2,
-        head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Total $']],
-        body: packData.length ? packData : [['Sin movimientos', '-', '-', '-', '-', '$0.00']],
-        theme: 'grid', headStyles: { fillColor: [23, 77, 54] }, styles: { fontSize: 8 }
-      });
+    // Empacados
+    let nextY = doc.lastAutoTable.finalY + 8;
+    doc.setFont('helvetica', 'bold');
+    doc.text('2. Embutidos y Empacados', 14, nextY);
 
-      let boxY = doc.lastAutoTable.finalY + 8;
-      doc.setFont('helvetica', 'bold');
-      doc.text('3. Arqueo de Caja', 14, boxY);
-      doc.setFont('helvetica', 'normal');
-      const countedVal = $('countedCash')?.value ? money(Number($('countedCash').value)) : 'No contado';
-      const diffVal = $('countedCash')?.value ? money(fromCents(cents(Number($('countedCash').value)) - expectedC)) : 'N/A';
-      doc.text(`Efectivo esperado: ${money(fromCents(expectedC))}  |  Contado: ${countedVal}  |  Diferencia: ${diffVal}`, 14, boxY + 6);
+    const packData = [];
+    PACKAGED_CATALOG.forEach(p => {
+      const item = state.packaged[p.id];
+      const s = sold.pack[p.id] || 0;
+      if (item.initial > 0 || item.entries > 0 || s > 0) {
+        packData.push([
+          p.name,
+          item.initial,
+          item.entries,
+          s,
+          Math.max(0, item.initial + item.entries - s),
+          money(s * item.price)
+        ]);
+      }
+    });
 
-      let signY = boxY + 22;
-      if (signY > 270) { doc.addPage(); signY = 30; }
-      doc.line(14, signY, 90, signY);
-      doc.line(120, signY, 196, signY);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text(`Encargados del puesto: ${encargados}`, 14, signY + 5);
-      doc.text('Firma del Patrono', 120, signY + 5);
-      doc.save(`informe_ventas_${state.date}.pdf`);
-    };
-  }
+    doc.autoTable({
+      startY: nextY + 2,
+      head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Total $']],
+      body: packData.length ? packData : [['Sin movimientos', '-', '-', '-', '-', '$0.00']],
+      theme: 'grid',
+      headStyles: { fillColor: [23, 77, 54] },
+      styles: { fontSize: 8 }
+    });
+
+    // Arqueo
+    let boxY = doc.lastAutoTable.finalY + 8;
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. Arqueo de Caja', 14, boxY);
+    doc.setFont('helvetica', 'normal');
+    const countedVal = $('countedCash')?.value ? money(Number($('countedCash').value)) : 'No contado';
+    const diffVal = $('countedCash')?.value ? money(fromCents(cents(Number($('countedCash').value)) - expectedC)) : 'N/A';
+    doc.text(`Efectivo esperado: ${money(fromCents(expectedC))}  |  Contado: ${countedVal}  |  Diferencia: ${diffVal}`, 14, boxY + 6);
+
+    // Firmas
+    let signY = boxY + 22;
+    if (signY > 270) { doc.addPage(); signY = 30; }
+    doc.line(14, signY, 90, signY);
+    doc.line(120, signY, 196, signY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(`Encargados del puesto: ${encargados}`, 14, signY + 5);
+    doc.text('Firma del Patrono', 120, signY + 5);
+
+    doc.save(`informe_ventas_${state.date}.pdf`);
+  };
+}
 
   load();
   render();
