@@ -1,5 +1,5 @@
 (() => {
-  const KEY = 'controlPollo_jornada_v8';
+  const KEY = 'controlPollo_jornada_v9';
   const $ = id => document.getElementById(id);
   const money = n => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const num = id => Number($(id)?.value) || 0;
@@ -41,7 +41,17 @@
     return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ========== INICIO ==========
+  // Limpiar el 0 automáticamente al hacer focus
+  function setupClearZero() {
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+      input.addEventListener('focus', function() {
+        if (this.value === '0' || this.value === '0.00' || this.value === '0.0') {
+          this.value = '';
+        }
+      });
+    });
+  }
+
   if ($('dayDate')) $('dayDate').value = today();
 
   function renderOpeningPackages() {
@@ -57,6 +67,7 @@
       `;
       tbody.appendChild(tr);
     });
+    setupClearZero();
   }
   renderOpeningPackages();
 
@@ -77,7 +88,6 @@
     const res = { pollo: { pechuga: 0, muslo: 0 }, pack: {} };
     PACKAGED_CATALOG.forEach(p => res.pack[p.id] = 0);
     if (!state) return res;
-
     (state.sales || []).forEach(s => {
       if (s.type === 'pollo') {
         if (s.subtype === 'pechuga') res.pollo.pechuga += s.weight;
@@ -89,7 +99,7 @@
     return res;
   }
 
-  // ========== NAVEGACIÓN ==========
+  // Navegación
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.onclick = () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -97,33 +107,22 @@
       btn.classList.add('active');
       const tab = $(btn.dataset.tab);
       if (tab) tab.classList.remove('hidden');
-
       if (btn.dataset.tab === 'tabCierre') calculateClosingData();
       if (btn.dataset.tab === 'tabInventario') updateInventoryView();
-      if (btn.dataset.tab === 'tabVenta') {
-        setTimeout(() => {
-          const category = document.getElementById('saleCategory')?.value;
-          if (category === 'empacado') {
-            populatePackSelect();
-          }
-        }, 150);
-      }
+      if (btn.dataset.tab === 'tabVenta') populatePackSelect();
     };
   });
 
-  // ========== RENDER PRINCIPAL ==========
   function render() {
     const has = !!state;
     if ($('openingCard')) $('openingCard').classList.toggle('hidden', has);
     if ($('appNav')) $('appNav').classList.toggle('hidden', !has);
-
     if (!has) return;
 
     if (document.querySelectorAll('.tab-content:not(.hidden)').length === 0) {
       if ($('tabResumen')) $('tabResumen').classList.remove('hidden');
     }
 
-    // Responsables
     const respSelect = $('saleResp');
     if (respSelect) {
       respSelect.innerHTML = `<option value="${escapeHtml(state.primaryResp)}">${escapeHtml(state.primaryResp)}</option>`;
@@ -132,10 +131,8 @@
       }
     }
 
-    // Header
     if ($('headerInfo')) $('headerInfo').textContent = `${state.establishment} · ${state.date}`;
 
-    // Totales
     const sold = getSoldQuantities();
     let totalSalesC = 0, totalChangeC = 0;
     (state.sales || []).forEach(s => {
@@ -146,17 +143,14 @@
     if ($('totalSales')) $('totalSales').textContent = money(fromCents(totalSalesC));
     if ($('totalPechugaSold')) $('totalPechugaSold').textContent = sold.pollo.pechuga.toFixed(2) + ' lb';
     if ($('totalMusloSold')) $('totalMusloSold').textContent = sold.pollo.muslo.toFixed(2) + ' lb';
-    
     let totalPack = 0;
     Object.values(sold.pack).forEach(v => totalPack += v);
     if ($('totalPackSold')) $('totalPackSold').textContent = totalPack.toFixed(0);
-
     if ($('sumStartCash')) $('sumStartCash').textContent = money(state.openingCash);
     if ($('sumTotalChange')) $('sumTotalChange').textContent = money(fromCents(totalChangeC));
     if ($('sumExpectedCash')) $('sumExpectedCash').textContent = money(fromCents(cents(state.openingCash) + totalSalesC));
     if ($('sumSaleCount')) $('sumSaleCount').textContent = state.sales.length;
 
-    // Historial
     const tbody = $('salesRows');
     if (tbody) {
       tbody.innerHTML = '';
@@ -176,9 +170,10 @@
 
     updateInventoryView();
     populatePackSelect();
+    setupClearZero();
   }
 
-  // ========== INICIAR JORNADA ==========
+  // Iniciar jornada
   if ($('startBtn')) {
     $('startBtn').onclick = () => {
       const primary = $('primaryResp')?.value.trim();
@@ -219,7 +214,7 @@
     };
   }
 
-  // ========== INVENTARIO ==========
+  // Inventario
   function updateInventoryView() {
     if (!state) return;
     const sold = getSoldQuantities();
@@ -248,19 +243,20 @@
           <td>${escapeHtml(p.name)}</td>
           <td class="num">${item.initial}</td>
           <td class="num"><input type="number" min="0" step="0.01" value="${item.entries}" id="entry_pack_${p.id}" class="small-input"></td>
-          <td class="num">${sCount.toFixed(0)}</td>
-          <td class="num"><strong>${Math.max(0, avail).toFixed(0)}</strong></td>
+          <td class="num">${sCount}</td>
+          <td class="num"><strong>${Math.max(0, avail)}</strong></td>
         `;
         tbody.appendChild(tr);
       });
     }
+    setupClearZero();
   }
 
   if ($('saveEntriesBtn')) {
     $('saveEntriesBtn').onclick = () => {
       if (!state) return;
       state.pollo.pechuga.entries = num('addEntryPechuga');
-      state.pollo.muslo.entries   = num('addEntryMuslo');
+      state.pollo.muslo.entries = num('addEntryMuslo');
       PACKAGED_CATALOG.forEach(p => {
         state.packaged[p.id].entries = num(`entry_pack_${p.id}`);
       });
@@ -270,177 +266,97 @@
     };
   }
 
-  // ========== VENTAS - MENÚ DE PRODUCTOS (CORREGIDO) ==========
+  // Menú de productos
   function populatePackSelect() {
-    const sel = document.getElementById('packSelect');
-    if (!sel) {
-      console.log('No se encontró packSelect');
-      return;
-    }
-
+    const sel = $('packSelect');
+    if (!sel) return;
     sel.innerHTML = '';
-
     if (!state) {
-      sel.innerHTML = '<option value="">Primero inicia la jornada</option>';
+      sel.innerHTML = '<option value="">Inicia la jornada primero</option>';
       return;
     }
-
     PACKAGED_CATALOG.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = p.name + ' - $' + p.price.toFixed(2);
       sel.appendChild(opt);
     });
-
-    // Actualizar precio del primero
-    const first = PACKAGED_CATALOG[0];
-    const priceInput = document.getElementById('packPriceOverride');
-    if (priceInput) priceInput.value = first.price.toFixed(2);
-    
-    const qty = Number(document.getElementById('packQty')?.value) || 1;
-    const subtotalInput = document.getElementById('packSubtotal');
-    if (subtotalInput) subtotalInput.value = (qty * first.price).toFixed(2);
+    if (PACKAGED_CATALOG.length) {
+      if ($('packPriceOverride')) $('packPriceOverride').value = PACKAGED_CATALOG[0].price.toFixed(2);
+      calcPackagedSubtotal();
+    }
   }
 
   function updatePackagedPrice() {
-    const sel = document.getElementById('packSelect');
-    if (!sel || !state) return;
-
-    const id = Number(sel.value);
+    const id = Number($('packSelect')?.value);
     const prod = PACKAGED_CATALOG.find(p => p.id === id);
-    if (prod) {
-      const priceInput = document.getElementById('packPriceOverride');
-      if (priceInput) {
-        priceInput.value = (state.packaged[id]?.price || prod.price).toFixed(2);
-      }
+    if (prod && $('packPriceOverride')) {
+      $('packPriceOverride').value = (state?.packaged[id]?.price || prod.price).toFixed(2);
       calcPackagedSubtotal();
     }
   }
 
   function calcPackagedSubtotal() {
-    const qty = num('packQty');
-    const price = num('packPriceOverride');
-    const subtotalInput = document.getElementById('packSubtotal');
-    if (subtotalInput) {
-      subtotalInput.value = (qty * price).toFixed(2);
+    if ($('packSubtotal')) {
+      $('packSubtotal').value = (num('packQty') * num('packPriceOverride')).toFixed(2);
     }
   }
 
-  // Cambio de categoría - versión más directa y confiable
-  const saleCategoryEl = document.getElementById('saleCategory');
-  if (saleCategoryEl) {
-    saleCategoryEl.addEventListener('change', function() {
-      const valor = this.value;
-      const polloBox = document.getElementById('polloSaleBox');
-      const packBox = document.getElementById('packSaleBox');
+  if ($('packSelect')) $('packSelect').addEventListener('change', updatePackagedPrice);
+  if ($('packQty')) $('packQty').addEventListener('input', calcPackagedSubtotal);
+  if ($('packPriceOverride')) $('packPriceOverride').addEventListener('input', calcPackagedSubtotal);
 
-      if (valor === 'pollo') {
-        if (polloBox) polloBox.classList.remove('hidden');
-        if (packBox) packBox.classList.add('hidden');
-      } else {
-        if (polloBox) polloBox.classList.add('hidden');
-        if (packBox) packBox.classList.remove('hidden');
-        // Forzar carga del menú
-        populatePackSelect();
-      }
-    });
-  }
-
-  // Eventos de los campos de empacados
-  const packSelectEl = document.getElementById('packSelect');
-  if (packSelectEl) packSelectEl.addEventListener('change', updatePackagedPrice);
-  
-  const packQtyEl = document.getElementById('packQty');
-  if (packQtyEl) packQtyEl.addEventListener('input', calcPackagedSubtotal);
-  
-  const packPriceEl = document.getElementById('packPriceOverride');
-  if (packPriceEl) packPriceEl.addEventListener('input', calcPackagedSubtotal);
-
-  // ========== AÑADIR POLLO ==========
+  // Añadir Pollo
   if ($('addPolloToCart')) {
     $('addPolloToCart').onclick = () => {
       if (!state) return;
-
       const type = $('polloType')?.value;
       const weight = num('polloWeight');
       const subtotal = num('polloSubtotal');
-
-      if (weight <= 0) {
-        alert('Escribe el peso que marca la báscula');
-        return;
-      }
-      if (subtotal <= 0) {
-        alert('Escribe el precio que marca la báscula');
-        return;
-      }
+      if (weight <= 0) return alert('Escribe el peso de la báscula');
+      if (subtotal <= 0) return alert('Escribe el precio de la báscula');
 
       const sold = getSoldQuantities();
       const available = state.pollo[type].initial + state.pollo[type].entries - sold.pollo[type];
-      const alreadyInCart = currentCart
-        .filter(i => i.type === 'pollo' && i.subtype === type)
-        .reduce((sum, item) => sum + item.weight, 0);
-
-      if (weight + alreadyInCart > available + 0.001) {
-        alert(`No hay suficiente ${type}.\nDisponible: ${Math.max(0, available - alreadyInCart).toFixed(2)} lb`);
-        return;
+      const inCart = currentCart.filter(i => i.type === 'pollo' && i.subtype === type).reduce((s, i) => s + i.weight, 0);
+      if (weight + inCart > available + 0.001) {
+        return alert(`No hay suficiente ${type}. Disponible: ${Math.max(0, available - inCart).toFixed(2)} lb`);
       }
 
       currentCart.push({
-        type: 'pollo',
-        subtype: type,
+        type: 'pollo', subtype: type,
         name: type === 'pechuga' ? 'Pechuga' : 'Muslo',
-        weight: weight,
-        qtyStr: weight.toFixed(2) + ' lb',
-        unitPrice: 0,
-        subtotal: subtotal
+        weight, qtyStr: weight.toFixed(2) + ' lb',
+        unitPrice: 0, subtotal
       });
-
       renderCart();
       if ($('polloWeight')) $('polloWeight').value = '';
       if ($('polloSubtotal')) $('polloSubtotal').value = '';
     };
   }
 
-  // ========== AÑADIR EMPACADO ==========
+  // Añadir Empacado
   if ($('addPackToCart')) {
     $('addPackToCart').onclick = () => {
       if (!state) return;
-      
       const prodId = Number($('packSelect')?.value);
       const prod = PACKAGED_CATALOG.find(p => p.id === prodId);
-      
-      if (!prod) {
-        alert('Selecciona un producto del menú');
-        return;
-      }
-
+      if (!prod) return alert('Selecciona un producto');
       const qty = num('packQty');
       const price = num('packPriceOverride');
-      
-      if (qty <= 0) { 
-        alert('Cantidad inválida.'); 
-        return; 
-      }
+      if (qty <= 0) return alert('Cantidad inválida');
 
       const sold = getSoldQuantities();
       const avail = state.packaged[prodId].initial + state.packaged[prodId].entries - (sold.pack[prodId] || 0);
-      const inCart = currentCart.filter(i => i.type === 'empacado' && i.productId === prodId).reduce((s,x) => s + x.qty, 0);
-
+      const inCart = currentCart.filter(i => i.type === 'empacado' && i.productId === prodId).reduce((s, i) => s + i.qty, 0);
       if (qty + inCart > avail + 0.0001) {
-        alert(`No hay suficiente ${prod.name}.\nDisponible: ${Math.max(0, avail - inCart)}`);
-        return;
+        return alert(`No hay suficiente ${prod.name}. Disponible: ${Math.max(0, avail - inCart)}`);
       }
 
       currentCart.push({
-        type: 'empacado',
-        productId: prodId,
-        name: prod.name,
-        qty,
-        qtyStr: qty + (qty === 1 ? ' und' : ' und'),
-        unitPrice: price,
-        subtotal: qty * price
+        type: 'empacado', productId: prodId, name: prod.name,
+        qty, qtyStr: qty + ' und', unitPrice: price, subtotal: qty * price
       });
-      
       renderCart();
       if ($('packQty')) $('packQty').value = '1';
       calcPackagedSubtotal();
@@ -450,7 +366,6 @@
   function renderCart() {
     const tbody = $('cartRows');
     if (!tbody) return;
-    
     tbody.innerHTML = '';
     let sum = 0;
     currentCart.forEach((item, idx) => {
@@ -464,7 +379,6 @@
       `;
       tbody.appendChild(tr);
     });
-    
     if ($('emptyCart')) $('emptyCart').classList.toggle('hidden', currentCart.length > 0);
     if ($('cartTotalSum')) $('cartTotalSum').textContent = money(sum);
     updateChangePreview();
@@ -482,51 +396,37 @@
     const given = num('cashGiven');
     const el = $('changePreview');
     if (!el) return;
-    
     if (!currentCart.length || !$('cashGiven')?.value) {
       el.textContent = 'Añade productos e introduce el dinero';
       el.classList.remove('warn');
       return;
     }
     const diff = given - sum;
-    el.innerHTML = diff < 0
-      ? `Falta: <strong>${money(-diff)}</strong>`
-      : `Vuelto: <strong>${money(diff)}</strong>`;
+    el.innerHTML = diff < 0 ? `Falta: <strong>${money(-diff)}</strong>` : `Vuelto: <strong>${money(diff)}</strong>`;
     el.classList.toggle('warn', diff < 0);
   }
 
-  // Confirmar venta
   if ($('confirmSaleBtn')) {
     $('confirmSaleBtn').onclick = () => {
       if (!active()) return;
-      if (!currentCart.length) { alert('El carrito está vacío.'); return; }
-
+      if (!currentCart.length) return alert('El carrito está vacío');
       const sum = currentCart.reduce((s, x) => s + x.subtotal, 0);
       const givenC = cents(num('cashGiven'));
-      const sumC = cents(sum);
-      if (givenC < sumC) { alert('El dinero entregado es menor al total.'); return; }
+      if (givenC < cents(sum)) return alert('El dinero entregado es menor al total');
 
       const resp = $('saleResp')?.value || state.primaryResp;
       const note = $('saleNote')?.value.trim() || '';
       const changePending = $('changePendingCheck')?.checked || false;
-      const changeC = givenC - sumC;
+      const changeC = givenC - cents(sum);
 
       currentCart.forEach(item => {
         state.sales.push({
           id: state.sales.length ? Math.max(...state.sales.map(s => s.id)) + 1 : 1,
           time: new Date().toLocaleTimeString('es-SV', {hour:'2-digit', minute:'2-digit'}),
-          resp,
-          type: item.type,
-          subtype: item.subtype || null,
-          productId: item.productId || null,
-          weight: item.weight || 0,
-          qty: item.qty || 0,
-          qtyStr: item.qtyStr,
-          unitPrice: item.unitPrice,
-          chargedC: cents(item.subtotal),
-          tenderC: givenC,
-          changeC,
-          changePending,
+          resp, type: item.type, subtype: item.subtype || null, productId: item.productId || null,
+          weight: item.weight || 0, qty: item.qty || 0, qtyStr: item.qtyStr,
+          unitPrice: item.unitPrice, chargedC: cents(item.subtotal),
+          tenderC: givenC, changeC, changePending,
           detail: item.name + (item.weight ? ` (${item.weight.toFixed(2)} lb)` : ` (${item.qty})`),
           note
         });
@@ -551,22 +451,17 @@
     render();
   };
 
-  // ========== CIERRE ==========
+  // Cierre (igual que antes)
   function calculateClosingData() {
     if (!state) return;
     const sold = getSoldQuantities();
-
-    const pInit = state.pollo.pechuga.initial;
-    const pEnt  = state.pollo.pechuga.entries;
-    const pSold = sold.pollo.pechuga;
+    const pInit = state.pollo.pechuga.initial, pEnt = state.pollo.pechuga.entries, pSold = sold.pollo.pechuga;
     const pRest = Math.max(0, pInit + pEnt - pSold);
     const applyP = $('applyShrinkPechuga')?.checked;
     const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
     const pFinal = truncate2(pRest - pMerma);
 
-    const mInit = state.pollo.muslo.initial;
-    const mEnt  = state.pollo.muslo.entries;
-    const mSold = sold.pollo.muslo;
+    const mInit = state.pollo.muslo.initial, mEnt = state.pollo.muslo.entries, mSold = sold.pollo.muslo;
     const mRest = Math.max(0, mInit + mEnt - mSold);
     const applyM = $('applyShrinkMuslo')?.checked;
     const mMerma = applyM ? truncate2(mRest * 0.03) : 0;
@@ -593,8 +488,7 @@
           <td class="num">${applyM ? '-' + mMerma.toFixed(2) : '0.00'}</td>
           <td class="num"><strong>${mFinal.toFixed(2)}</strong></td>
           <td class="num">${money(mSold * state.pollo.muslo.price)}</td>
-        </tr>
-      `;
+        </tr>`;
     }
 
     let packHTML = '';
@@ -603,21 +497,17 @@
       const s = sold.pack[p.id] || 0;
       const rest = Math.max(0, item.initial + item.entries - s);
       if (item.initial > 0 || item.entries > 0 || s > 0) {
-        packHTML += `
-          <tr>
-            <td>${escapeHtml(p.name)}</td>
-            <td class="num">${item.initial}</td>
-            <td class="num">${item.entries}</td>
-            <td class="num">${s}</td>
-            <td class="num">${rest}</td>
-            <td class="num">${money(s * item.price)}</td>
-          </tr>
-        `;
+        packHTML += `<tr>
+          <td>${escapeHtml(p.name)}</td>
+          <td class="num">${item.initial}</td>
+          <td class="num">${item.entries}</td>
+          <td class="num">${s}</td>
+          <td class="num">${rest}</td>
+          <td class="num">${money(s * item.price)}</td>
+        </tr>`;
       }
     });
-    if ($('closingPackRows')) {
-      $('closingPackRows').innerHTML = packHTML || '<tr><td colspan="6" class="empty">Sin movimientos</td></tr>';
-    }
+    if ($('closingPackRows')) $('closingPackRows').innerHTML = packHTML || '<tr><td colspan="6" class="empty">Sin movimientos</td></tr>';
 
     const hasPending = (state.sales || []).some(s => s.changePending);
     if ($('pendingChangeAlert')) $('pendingChangeAlert').classList.toggle('hidden', !hasPending);
@@ -636,7 +526,6 @@
     const counted = $('countedCash')?.value;
     const el = $('cashDifference');
     if (!el) return;
-    
     if (!counted) {
       el.textContent = 'Esperado: ' + money(fromCents(expectedC)) + ' · Contado pendiente';
       return;
@@ -649,7 +538,7 @@
   if ($('closeDayBtn')) {
     $('closeDayBtn').onclick = () => {
       if (!active()) return;
-      if (!confirm('¿Cerrar la jornada definitivamente?')) return;
+      if (!confirm('¿Cerrar la jornada?')) return;
       state.countedC = $('countedCash')?.value === '' ? null : cents(num('countedCash'));
       state.closingNote = $('closingNote')?.value || '';
       state.closed = true;
@@ -660,20 +549,16 @@
     };
   }
 
-  // ========== PDF ==========
+  // PDF (igual)
   if ($('downloadPdfBtn')) {
     $('downloadPdfBtn').onclick = () => {
-      if (!window.jspdf) {
-        alert('No se pudo cargar la librería PDF. Revisa tu conexión.');
-        return;
-      }
+      if (!window.jspdf) return alert('No se pudo cargar la librería PDF');
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'mm', 'a4');
       const sold = getSoldQuantities();
       let totalSalesC = 0;
       (state.sales || []).forEach(s => totalSalesC += s.chargedC);
       const expectedC = cents(state.openingCash) + totalSalesC;
-
       const encargados = state.primaryResp + (state.secondResp ? ' y ' + state.secondResp : '');
 
       doc.setFont('helvetica', 'bold');
@@ -681,7 +566,6 @@
       doc.text(state.establishment, 105, 12, { align: 'center' });
       doc.setFontSize(11);
       doc.text('INFORME DIARIO DE VENTAS E INVENTARIO', 105, 18, { align: 'center' });
-
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.text(`Fecha: ${state.date}  |  Estado: ${state.closed ? 'CERRADA' : 'EN CURSO'}`, 14, 25);
@@ -692,15 +576,13 @@
       const pRest = Math.max(0, state.pollo.pechuga.initial + state.pollo.pechuga.entries - sold.pollo.pechuga);
       const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
       const pFinal = truncate2(pRest - pMerma);
-
       const applyM = $('applyShrinkMuslo')?.checked;
       const mRest = Math.max(0, state.pollo.muslo.initial + state.pollo.muslo.entries - sold.pollo.muslo);
       const mMerma = applyM ? truncate2(mRest * 0.03) : 0;
       const mFinal = truncate2(mRest - mMerma);
 
       doc.setFont('helvetica', 'bold');
-      doc.text('1. Pollo (Inicial vs Camión)', 14, 42);
-
+      doc.text('1. Pollo', 14, 42);
       doc.autoTable({
         startY: 44,
         head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Merma', 'Final', 'Total $']],
@@ -708,32 +590,25 @@
           ['Pechuga', state.pollo.pechuga.initial.toFixed(2), state.pollo.pechuga.entries.toFixed(2), sold.pollo.pechuga.toFixed(2), pRest.toFixed(2), applyP ? '-'+pMerma.toFixed(2) : '0.00', pFinal.toFixed(2), money(sold.pollo.pechuga * state.pollo.pechuga.price)],
           ['Muslo', state.pollo.muslo.initial.toFixed(2), state.pollo.muslo.entries.toFixed(2), sold.pollo.muslo.toFixed(2), mRest.toFixed(2), applyM ? '-'+mMerma.toFixed(2) : '0.00', mFinal.toFixed(2), money(sold.pollo.muslo * state.pollo.muslo.price)]
         ],
-        theme: 'grid',
-        headStyles: { fillColor: [23, 77, 54] },
-        styles: { fontSize: 8 }
+        theme: 'grid', headStyles: { fillColor: [23, 77, 54] }, styles: { fontSize: 8 }
       });
 
       let nextY = doc.lastAutoTable.finalY + 8;
       doc.setFont('helvetica', 'bold');
       doc.text('2. Embutidos y Empacados', 14, nextY);
-
       const packData = [];
       PACKAGED_CATALOG.forEach(p => {
         const item = state.packaged[p.id];
         const s = sold.pack[p.id] || 0;
         if (item.initial > 0 || item.entries > 0 || s > 0) {
-          const rest = Math.max(0, item.initial + item.entries - s);
-          packData.push([p.name, item.initial, item.entries, s, rest, money(s * item.price)]);
+          packData.push([p.name, item.initial, item.entries, s, Math.max(0, item.initial + item.entries - s), money(s * item.price)]);
         }
       });
-
       doc.autoTable({
         startY: nextY + 2,
         head: [['Producto', 'Inicial', 'Camión', 'Vendido', 'Restante', 'Total $']],
         body: packData.length ? packData : [['Sin movimientos', '-', '-', '-', '-', '$0.00']],
-        theme: 'grid',
-        headStyles: { fillColor: [23, 77, 54] },
-        styles: { fontSize: 8 }
+        theme: 'grid', headStyles: { fillColor: [23, 77, 54] }, styles: { fontSize: 8 }
       });
 
       let boxY = doc.lastAutoTable.finalY + 8;
@@ -752,12 +627,10 @@
       doc.setFontSize(9);
       doc.text(`Encargados del puesto: ${encargados}`, 14, signY + 5);
       doc.text('Firma del Patrono', 120, signY + 5);
-
       doc.save(`informe_ventas_${state.date}.pdf`);
     };
   }
 
-  // ========== ARRANQUE ==========
   load();
   render();
 })();

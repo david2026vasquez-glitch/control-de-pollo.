@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#174d36">
-<title>Control de Pollo y Abarrotes</title>
+<title>Control de Pollo</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -20,12 +20,11 @@
 
 <main class="main-container">
 
-  <!-- AVISO -->
-  <div class="notice no-print" id="storageNotice">
+  <div class="notice no-print">
     Los datos se guardan solo en este teléfono.
   </div>
 
-  <!-- ========== APERTURA DE JORNADA ========== -->
+  <!-- APERTURA -->
   <section class="card" id="openingCard">
     <h2>Abrir Jornada</h2>
 
@@ -53,8 +52,8 @@
 
     <div class="row">
       <div>
-        <label>Fondo inicial de caja ($)</label>
-        <input id="openingCash" type="number" min="0" step="0.01" inputmode="decimal" value="0.00">
+        <label>Fondo inicial ($)</label>
+        <input id="openingCash" type="number" min="0" step="0.01" inputmode="decimal" value="0">
       </div>
       <div>
         <label>Observaciones</label>
@@ -95,7 +94,7 @@
     <button class="btn primary full-w" id="startBtn" style="margin-top:16px;">Iniciar Jornada</button>
   </section>
 
-  <!-- ========== PESTAÑA RESUMEN ========== -->
+  <!-- RESUMEN -->
   <section class="tab-content hidden" id="tabResumen">
     <div class="card">
       <h2>Resumen del día</h2>
@@ -133,8 +132,7 @@
     </div>
   </section>
 
-  <!-- ========== PESTAÑA VENDER ========== -->
-    <!-- ========== PESTAÑA VENDER ========== -->
+  <!-- VENDER (ambos formularios siempre visibles) -->
   <section class="tab-content hidden" id="tabVenta">
     <div class="card">
       <h2>Nueva venta</h2>
@@ -144,49 +142,38 @@
           <label>Atendió</label>
           <select id="saleResp"></select>
         </div>
-        <div>
-          <label>Categoría</label>
-          <select id="saleCategory">
-            <option value="pollo">Pollo (Pechuga / Muslo)</option>
-            <option value="empacado">Embutidos / Menú</option>
-          </select>
-        </div>
       </div>
 
-      <!-- Formulario Pollo -->
-      <div id="polloSaleBox" class="sale-box">
+      <!-- POLLO -->
+      <h3 class="section-title">Pollo (Pechuga / Muslo)</h3>
+      <div class="sale-box">
         <div class="row">
           <div>
-            <label>Tipo de pollo</label>
+            <label>Tipo</label>
             <select id="polloType">
               <option value="pechuga">Pechuga</option>
               <option value="muslo">Muslo</option>
             </select>
           </div>
           <div>
-            <label>Peso que marca la báscula (lb)</label>
-            <input id="polloWeight" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ej. 2.35">
+            <label>Peso báscula (lb)</label>
+            <input id="polloWeight" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
           </div>
         </div>
-
-        <div style="margin-top:10px;">
+        <div style="margin-top:8px;">
           <label>Precio que marca la báscula ($)</label>
-          <input id="polloSubtotal" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ej. 8.10">
+          <input id="polloSubtotal" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
         </div>
-
-        <button class="btn secondary full-w" id="addPolloToCart" style="margin-top:12px;">
-          + Añadir Pollo al Carrito
-        </button>
+        <button class="btn secondary full-w" id="addPolloToCart" style="margin-top:10px;">+ Añadir Pollo</button>
       </div>
 
-      <!-- Formulario Empacados / Menú -->
-      <div id="packSaleBox" class="sale-box hidden">
+      <!-- EMBUTIDOS -->
+      <h3 class="section-title">Embutidos y Menú</h3>
+      <div class="sale-box">
         <div class="row">
           <div>
             <label>Producto</label>
-            <select id="packSelect">
-              <option value="">Cargando menú...</option>
-            </select>
+            <select id="packSelect"></select>
           </div>
           <div>
             <label>Cantidad</label>
@@ -195,7 +182,7 @@
         </div>
         <div class="row" style="margin-top:6px;">
           <div>
-            <label>Precio unitario ($)</label>
+            <label>Precio ($)</label>
             <input id="packPriceOverride" type="number" min="0" step="0.01" inputmode="decimal">
           </div>
           <div>
@@ -203,12 +190,10 @@
             <input id="packSubtotal" type="text" readonly>
           </div>
         </div>
-        <button class="btn secondary full-w" id="addPackToCart" style="margin-top:10px;">
-          + Añadir al carrito
-        </button>
+        <button class="btn secondary full-w" id="addPackToCart" style="margin-top:10px;">+ Añadir al carrito</button>
       </div>
 
-      <!-- Carrito -->
+      <!-- CARRITO -->
       <div class="cart-section">
         <h3>Carrito</h3>
         <div class="table-wrap">
@@ -228,7 +213,7 @@
         <div class="cart-total">Total: <strong id="cartTotalSum">$0.00</strong></div>
       </div>
 
-      <!-- Cobro -->
+      <!-- COBRO -->
       <div class="pay-box">
         <div class="row">
           <div>
@@ -236,25 +221,25 @@
             <input id="cashGiven" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
           </div>
           <div>
-            <label>Nota (opcional)</label>
-            <input id="saleNote" type="text" placeholder="Ticket, etc.">
+            <label>Nota</label>
+            <input id="saleNote" type="text" placeholder="Opcional">
           </div>
         </div>
         <div class="result" id="changePreview">Vuelto: $0.00</div>
         <label class="check-label">
           <input type="checkbox" id="changePendingCheck">
-          Necesita conseguir cambio con otro vendedor
+          Necesita cambio de otro vendedor
         </label>
         <button class="btn primary full-w" id="confirmSaleBtn" style="margin-top:10px;">Confirmar Venta</button>
       </div>
     </div>
   </section>
 
-  <!-- ========== PESTAÑA INVENTARIO ========== -->
+  <!-- INVENTARIO -->
   <section class="tab-content hidden" id="tabInventario">
     <div class="card">
       <h2>Inventario</h2>
-      <p class="sub">Inicial (lo que tenías) y Camión (lo que llegó hoy) están separados.</p>
+      <p class="sub">Inicial y Camión están separados.</p>
 
       <h3 class="section-title">Pollo</h3>
       <div class="table-wrap">
@@ -287,7 +272,7 @@
         </table>
       </div>
 
-      <h3 class="section-title">Embutidos / Empacados</h3>
+      <h3 class="section-title">Embutidos</h3>
       <div class="table-wrap" style="max-height:300px;">
         <table>
           <thead>
@@ -307,13 +292,13 @@
     </div>
   </section>
 
-  <!-- ========== PESTAÑA CIERRE ========== -->
+  <!-- CIERRE -->
   <section class="tab-content hidden" id="tabCierre">
     <div class="card">
       <h2>Cierre de jornada</h2>
 
       <div class="merma-box">
-        <h3>Merma 3% (solo al cierre, sobre lo que quedó)</h3>
+        <h3>Merma 3% (solo al cierre)</h3>
         <label class="check-label">
           <input type="checkbox" id="applyShrinkPechuga"> Aplicar 3% a Pechuga restante
         </label>
@@ -372,19 +357,18 @@
         </div>
         <div class="result" id="cashDifference">Diferencia pendiente</div>
         <div id="pendingChangeAlert" class="notice hidden" style="margin-top:8px;background:#fbe8e8;border-color:#f0aaaa;color:#721c24;">
-          Hay cambios pendientes de conseguir.
+          Hay cambios pendientes.
         </div>
       </div>
 
       <button class="btn secondary full-w" id="calcClosingBtn" style="margin-top:12px;">Calcular cierre</button>
       <button class="btn primary full-w" id="downloadPdfBtn" style="margin-top:8px;background:#226b4a;">Descargar Informe PDF</button>
-      <button class="btn danger full-w" id="closeDayBtn" style="margin-top:8px;">Cerrar jornada definitivamente</button>
+      <button class="btn danger full-w" id="closeDayBtn" style="margin-top:8px;">Cerrar jornada</button>
     </div>
   </section>
 
 </main>
 
-<!-- NAVEGACIÓN INFERIOR -->
 <nav class="bottom-nav no-print hidden" id="appNav">
   <button class="nav-btn active" data-tab="tabResumen"><span>📊</span><small>Resumen</small></button>
   <button class="nav-btn" data-tab="tabVenta"><span>🛒</span><small>Vender</small></button>
