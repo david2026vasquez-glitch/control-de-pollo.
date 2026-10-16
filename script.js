@@ -451,17 +451,34 @@
     render();
   };
 
-  // Cierre (igual que antes)
+  // ========== CIERRE (CORREGIDO: muestra dinero real de pechuga y muslo) ==========
   function calculateClosingData() {
     if (!state) return;
     const sold = getSoldQuantities();
-    const pInit = state.pollo.pechuga.initial, pEnt = state.pollo.pechuga.entries, pSold = sold.pollo.pechuga;
+
+    // Dinero real cobrado de pechuga y muslo
+    let pechugaMoney = 0;
+    let musloMoney = 0;
+    (state.sales || []).forEach(s => {
+      if (s.type === 'pollo') {
+        if (s.subtype === 'pechuga') pechugaMoney += fromCents(s.chargedC);
+        if (s.subtype === 'muslo')   musloMoney  += fromCents(s.chargedC);
+      }
+    });
+
+    // Pechuga
+    const pInit = state.pollo.pechuga.initial;
+    const pEnt  = state.pollo.pechuga.entries;
+    const pSold = sold.pollo.pechuga;
     const pRest = Math.max(0, pInit + pEnt - pSold);
     const applyP = $('applyShrinkPechuga')?.checked;
     const pMerma = applyP ? truncate2(pRest * 0.03) : 0;
     const pFinal = truncate2(pRest - pMerma);
 
-    const mInit = state.pollo.muslo.initial, mEnt = state.pollo.muslo.entries, mSold = sold.pollo.muslo;
+    // Muslo
+    const mInit = state.pollo.muslo.initial;
+    const mEnt  = state.pollo.muslo.entries;
+    const mSold = sold.pollo.muslo;
     const mRest = Math.max(0, mInit + mEnt - mSold);
     const applyM = $('applyShrinkMuslo')?.checked;
     const mMerma = applyM ? truncate2(mRest * 0.03) : 0;
@@ -477,7 +494,7 @@
           <td class="num">${pRest.toFixed(2)}</td>
           <td class="num">${applyP ? '-' + pMerma.toFixed(2) : '0.00'}</td>
           <td class="num"><strong>${pFinal.toFixed(2)}</strong></td>
-          <td class="num">${money(pSold * state.pollo.pechuga.price)}</td>
+          <td class="num"><strong>${money(pechugaMoney)}</strong></td>
         </tr>
         <tr>
           <td><strong>Muslo</strong></td>
@@ -487,27 +504,33 @@
           <td class="num">${mRest.toFixed(2)}</td>
           <td class="num">${applyM ? '-' + mMerma.toFixed(2) : '0.00'}</td>
           <td class="num"><strong>${mFinal.toFixed(2)}</strong></td>
-          <td class="num">${money(mSold * state.pollo.muslo.price)}</td>
-        </tr>`;
+          <td class="num"><strong>${money(musloMoney)}</strong></td>
+        </tr>
+      `;
     }
 
+    // Empacados (sin cambios)
     let packHTML = '';
     PACKAGED_CATALOG.forEach(p => {
       const item = state.packaged[p.id];
       const s = sold.pack[p.id] || 0;
       const rest = Math.max(0, item.initial + item.entries - s);
       if (item.initial > 0 || item.entries > 0 || s > 0) {
-        packHTML += `<tr>
-          <td>${escapeHtml(p.name)}</td>
-          <td class="num">${item.initial}</td>
-          <td class="num">${item.entries}</td>
-          <td class="num">${s}</td>
-          <td class="num">${rest}</td>
-          <td class="num">${money(s * item.price)}</td>
-        </tr>`;
+        packHTML += `
+          <tr>
+            <td>${escapeHtml(p.name)}</td>
+            <td class="num">${item.initial}</td>
+            <td class="num">${item.entries}</td>
+            <td class="num">${s}</td>
+            <td class="num">${rest}</td>
+            <td class="num">${money(s * item.price)}</td>
+          </tr>
+        `;
       }
     });
-    if ($('closingPackRows')) $('closingPackRows').innerHTML = packHTML || '<tr><td colspan="6" class="empty">Sin movimientos</td></tr>';
+    if ($('closingPackRows')) {
+      $('closingPackRows').innerHTML = packHTML || '<tr><td colspan="6" class="empty">Sin movimientos</td></tr>';
+    }
 
     const hasPending = (state.sales || []).some(s => s.changePending);
     if ($('pendingChangeAlert')) $('pendingChangeAlert').classList.toggle('hidden', !hasPending);
